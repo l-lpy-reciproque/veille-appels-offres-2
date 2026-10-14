@@ -35,7 +35,8 @@ def obtenir_derniere_date_parution(conn, valeur_par_defaut: str) -> str:
 
 def recuperer_toutes_les_lignes(conn) -> list[dict]:
     """Récupère l'intégralité de la table annonces_boamp, sous forme de dicts
-    plats — utilisé pour l'analyse exploratoire (pas de filtre de date)."""
+    plats (pas de filtre de date) — utilisé par les scripts de recalcul et
+    l'analyse exploratoire."""
     with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
         cur.execute("SELECT * FROM annonces_boamp;")
         return [dict(ligne) for ligne in cur.fetchall()]

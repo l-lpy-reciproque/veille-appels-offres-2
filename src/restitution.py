@@ -1,9 +1,8 @@
-"""Filtrage et tri des annonces pour la restitution finale.
+"""Filtrage et tri des annonces retenues (colonne `rapporte`, affichées sur la page web).
 
 Deux usages : sur les tuples (annonce, score) du run courant (est_retenue,
 trier_annonces, restituer), et sur des lignes plates issues directement de
-Supabase pour une restitution a posteriori sur une plage de dates choisie
-(filtrer_trier_lignes).
+Supabase, pour les scripts de recalcul (filtrer_trier_lignes).
 
 Règle de sélection : le seuil de score exigé décroît avec le nombre de pôles
 matchés. Une annonce sans aucun pôle doit donc être très pertinente pour être
@@ -51,7 +50,7 @@ def restituer(resultats: list[tuple[dict, float]]) -> list[tuple[dict, float]]:
 
         
 def _cle_tri_lignes(total_poles: int, score: float, note) -> tuple:
-    """Tri du rapport : meilleure note LLM d'abord, puis nb de tags, puis score.
+    """Meilleure note LLM d'abord, puis nb de tags, puis score.
     Les annonces sans note (jamais analysées) sont placées en dernier."""
     note_valeur = note if note is not None else -1
     return (note_valeur, total_poles, score)

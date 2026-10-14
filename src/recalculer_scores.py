@@ -54,7 +54,7 @@ def recalculer_llm(conn, reinitialiser: bool) -> None:
         return
 
     toutes = recuperer_toutes_les_lignes(conn)
-    # Même filtre que le rapport ; le tri place en premier les annonces les
+    # Même filtre que la pipeline (colonne rapporte) ; le tri place en premier les annonces les
     # plus prometteuses (nb de tags puis score), utile si le quota s'épuise.
     retenues = [l for l in filtrer_trier_lignes(toutes) if l.get("idweb")]
     print(f"{len(retenues)} annonce(s) sur {len(toutes)} passent le filtre de restitution.")

@@ -1,7 +1,7 @@
 """Analyse exploratoire ad hoc des données de veille — à exécuter en local
 depuis VS Code, à tout moment, sur l'ensemble de l'historique stocké.
 
-N'est pas branché sur la pipeline ni le rapport : script indépendant.
+N'est pas branché sur la pipeline ni sur la page web : script indépendant.
 
 Exécution locale :
     pip install -r requirements-analyse.txt

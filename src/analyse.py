@@ -5,8 +5,8 @@ pertinence sur 5. Le contexte « qui est reciproque » est fourni au modèle
 via le manifeste, ce qui évite de dupliquer la description du profil.
 
 Fallback : en cas d'échec pour une annonce (timeout, réponse invalide,
-quota), l'annonce est ignorée — la pipeline continue et le rapport est
-généré sans analyse pour celle-ci.
+quota), l'annonce est ignorée — la pipeline continue et l'annonce reste
+sans analyse (elle apparaît quand même sur la page web).
 """
 
 import json

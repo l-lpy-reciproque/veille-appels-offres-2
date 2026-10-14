@@ -1,23 +1,61 @@
-# Pipeline de veille — appels d'offres BOAMP
+# Veille appels d'offres BOAMP — reciproque
 
-Pipeline automatisée de collecte, de tri, d'analyse et de restitution des avis
-de marché publiés sur le BOAMP. Les annonces sont filtrées par descripteurs
-métier, taguées par pôles d'activité, classées par similarité sémantique avec
-le profil de reciproque, puis évaluées par un LLM. Le résultat est un rapport
-HTML envoyé par email.
+Chaque matin, une pipeline collecte les avis de marché publiés sur le BOAMP,
+les tague par pôles d'activité, les classe par similarité sémantique avec le
+profil de reciproque et fait évaluer les plus pertinents par un LLM. Les
+annonces retenues sont consultées sur une **page web** où l'équipe peut les
+marquer comme vues et leur donner sa propre note.
 
 ```
 API BOAMP ─► tags par mots-clés ─► score sémantique ─► Supabase (upsert)
           ─► filtre (seuil selon nb de pôles) ─► analyse LLM (Groq)
-          ─► rapport HTML ─► email
+          ─► suppression des annonces expirées depuis plus d'un mois
+
+Page web (GitHub Pages) ◄─► Supabase : lecture des annonces retenues,
+                                        écriture de « vue » et de l'évaluation
 ```
 
-## Démarrage rapide
+**Page :** https://l-lpy-reciproque.github.io/veille-appels-offres-2/
+(accès sur identifiant, comptes créés dans Supabase).
+
+## La page web
+
+Fichier unique [`web/index.html`](web/index.html), sans étape de build. Elle lit
+directement la table `annonces_boamp` : rien n'est régénéré chaque jour, les
+nouvelles annonces apparaissent dès que la pipeline a tourné.
+
+- **Annonces affichées** : celles marquées `rapporte` par la pipeline, plus
+  celles déjà évaluées par l'équipe (même si elles ne passent plus le filtre).
+- **Tri** : date de publication la plus récente d'abord ; à date égale, note
+  LLM, puis nombre de pôles, puis score.
+- **En tête** : nombre d'annonces publiées aujourd'hui (toutes celles
+  collectées, et parmi elles les retenues). Vaut 0 avant le run du matin et
+  les jours sans publication.
+- **Colonnes** : acheteur, objet et badges de pôles, descripteurs, marché,
+  dates, proximité sémantique, analyse LLM, **Évaluation** (note de 0 à 5 ;
+  recliquer la note l'efface ; affiche qui a modifié en dernier et quand),
+  lien vers l'avis, **Vue** (case à cocher ; grise la ligne).
+- **Filtres** : masquer les vues, masquer les annonces dont la date limite est
+  passée (actif par défaut), date de publication minimale, recherche texte.
+
+Publication : [`.github/workflows/pages.yml`](.github/workflows/pages.yml)
+déploie `web/` à chaque push sur `main` qui modifie ce dossier. GitHub Pages
+met la page en cache jusqu'à 10 minutes : après un déploiement, recharger avec
+Cmd + Shift + R.
+
+Pour tester en local :
+
+```bash
+python3 -m http.server 8000 --directory web   # puis http://localhost:8000
+```
+
+## Pipeline
+
+### Démarrage rapide
 
 ```bash
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-# créer un fichier .env à la racine (voir ci-dessous)
 python test_connexion_db.py   # vérifie l'accès à Supabase
 python src/main.py            # lance la pipeline complète
 ```
@@ -27,193 +65,152 @@ Les scripts se lancent **depuis la racine du dépôt**, sous la forme
 (`from db import ...`) et ne fonctionnent que parce que `src/` est alors dans
 le `sys.path`.
 
-### Variables d'environnement (`.env`)
+### Variables d'environnement (`.env` en local, secrets GitHub en CI)
 
 | Variable | Obligatoire | Rôle |
 |---|---|---|
 | `SUPABASE_DB_URL` | oui | Chaîne de connexion Postgres Supabase (Session pooler). |
-| `GROQ_API_KEY` | non | Clé Groq. Absente : l'analyse LLM est ignorée pour tout le run. |
-| `SMTP_USER` | non | Adresse d'expédition. |
-| `SMTP_PASSWORD` | non | Mot de passe d'application SMTP (pas le mot de passe du compte). |
-| `MAIL_DESTINATAIRE` | non | Destinataire(s), séparés par des virgules. |
-| `SMTP_HOST` / `SMTP_PORT` | non | Par défaut `smtp.gmail.com` / `587`. |
+| `GROQ_API_KEY` | non | Clé Groq. Absente : aucune analyse LLM pendant le run. |
 
-Si l'une des trois variables `SMTP_USER`, `SMTP_PASSWORD`, `MAIL_DESTINATAIRE`
-manque, le rapport est généré mais pas envoyé.
+### Exécution quotidienne
 
-## Commandes
+[`.github/workflows/pipeline.yml`](.github/workflows/pipeline.yml) lance
+`python src/main.py` tous les jours à 6 h UTC (8 h à Paris en été, 7 h en
+hiver), et peut être déclenché à la main depuis l'onglet Actions. Il met en
+cache le modèle Hugging Face. GitHub désactive les tâches planifiées d'un dépôt
+public après 60 jours sans commit (un email prévient ; un clic dans Actions
+les réactive).
+
+### Étapes
+
+1. **Collecte incrémentale** (`ingestion.py`). Le curseur `depuis` est le
+   `MAX(dateparution)` en base (table vide : aujourd'hui − 7 jours). L'API
+   OpenDataSoft du BOAMP est interrogée avec une correspondance exacte sur des
+   descripteurs métier (`MOTS_CLES_DESCRIPTEURS_METIER`), `datelimitereponse
+   >= now()` et `dateparution >= depuis`, plafonnée à `MAX_ANNONCES` (1000).
+   Le dernier jour est toujours re-collecté, sans risque : l'écriture se fait
+   en `INSERT … ON CONFLICT (idweb) DO UPDATE`, qui ne touche jamais aux
+   colonnes de l'équipe (`vue`, `note_humaine`).
+2. **Tags** (`tagging.py`, `mots_cles.py`). Cinq clusters de mots-clés
+   (prestations, numérique/multimédia, muséo/scéno, secteurs transverses,
+   institutions) cherchés dans `objet`, `nomacheteur` et `descripteur_libelle`
+   normalisés (minuscules, sans accents). Une colonne `match_*` par cluster,
+   et `total_poles` pour leur somme.
+3. **Score sémantique** (`scoring.py`). Similarité cosinus entre le manifeste
+   court et l'**objet** de l'annonce, avec `paraphrase-multilingual-mpnet-base-v2`.
+4. **Sélection** (`restitution.py`). Le score exigé baisse quand le nombre de
+   pôles augmente ; les annonces retenues sont marquées `rapporte = true`.
+
+   | `total_poles` | Score exigé |
+   |---|---|
+   | ≥ 3 | > 0.2 |
+   | 2 | > 0.3 |
+   | 1 | > 0.4 |
+   | 0 | > 0.5 |
+
+5. **Analyse LLM** (`analyse.py`). Chaque annonce retenue est soumise à Groq
+   (`openai/gpt-oss-120b`) avec le manifeste détaillé ; il renvoie une phrase
+   de pertinence et une note sur 5 (`analyse_pertinence`, `analyse_note`). Un
+   échec pour une annonce la laisse simplement sans analyse.
+6. **Nettoyage** (`db.supprimer_annonces_expirees`). Suppression des annonces
+   dont la date limite est dépassée depuis plus d'un mois, **sauf celles
+   évaluées par l'équipe**, conservées pour comparer note humaine, note LLM et
+   score. Une annonce supprimée ne revient pas, puisque la collecte ignore les
+   avis expirés.
+
+## Scripts ponctuels
 
 | Commande | Usage |
 |---|---|
-| `python src/main.py` | Run complet : collecte, tags, score, écriture en base, analyse LLM, rapport, mail. |
-| `python src/generer_rapport.py 2026-09-01` | Régénère un rapport HTML depuis la base pour les annonces publiées à partir de cette date (sans argument : 7 derniers jours). Aucune collecte, aucun appel LLM. |
-| `python src/recalculer_rapporte.py` | Recalcule la colonne `rapporte` de toute la table. À lancer après toute modification des seuils ou des mots-clés. |
 | `python src/recalculer_scores.py similarite` | Recalcule `score_similarite` pour toute la table avec le manifeste court actuel. |
-| `python src/recalculer_scores.py llm` | Analyse par le LLM les annonces retenues qui n'ont pas encore de note (reprise possible après un quota Groq épuisé). Avec `--reinitialiser` : efface toutes les analyses puis ré-analyse toutes les annonces retenues. |
-| `python src/analyse_exploratoire.py` | Graphiques sur tout l'historique (dépendances : `requirements-analyse.txt`). |
+| `python src/recalculer_rapporte.py` | Recalcule `rapporte` (annonces retenues) à partir des scores et tags stockés. |
+| `python src/recalculer_scores.py llm` | Analyse par le LLM les annonces retenues sans note (reprise possible après un quota Groq épuisé). Avec `--reinitialiser` : efface toutes les analyses puis ré-analyse toutes les retenues (vérifie d'abord que l'API répond ; enregistre par lots de 25). |
+| `python src/analyse_exploratoire.py` | Graphiques sur tout l'historique : score selon le nombre de tags, score selon la note LLM, heatmap tags × note. Dépendances à part : `pip install -r requirements-analyse.txt`. |
 | `python test_connexion_db.py` | Vérifie la connexion Supabase et affiche le nombre de lignes. |
-
-Les rapports sont écrits dans le répertoire courant sous le nom
-`rapport_boamp_<date>.html` (ignorés par git).
-
-## Fonctionnement
-
-### 1. Collecte incrémentale
-`main.py` lit le `MAX(dateparution)` de la table `annonces_boamp` et s'en sert
-comme curseur `depuis` (table vide : aujourd'hui − 7 jours). `ingestion.py`
-interroge l'API OpenDataSoft du BOAMP avec :
-- une correspondance exacte sur une liste de descripteurs métier
-  (`MOTS_CLES_DESCRIPTEURS_METIER`, vocabulaire contrôlé du BOAMP) ;
-- `datelimitereponse >= now()` (avis encore ouverts) ;
-- `dateparution >= depuis`.
-
-La pagination est plafonnée par `MAX_ANNONCES` (1000). Le dernier jour est
-toujours re-collecté, ce qui est sans risque : l'écriture se fait en
-`INSERT … ON CONFLICT (idweb) DO UPDATE`.
-
-### 2. Tags thématiques
-`tagging.py` confronte chaque annonce aux clusters de mots-clés de
-`mots_cles.py` (prestations, numérique/multimédia, muséo/scéno, secteurs
-transverses, institutions). Le texte cherché est la réunion de `objet`,
-`nomacheteur` et `descripteur_libelle`, normalisée (minuscules, sans accents).
-Chaque cluster produit une colonne booléenne `match_*`, et `total_poles` en
-fait la somme.
-
-### 3. Score sémantique
-`scoring.py` calcule la similarité cosinus entre l'embedding du manifeste court
-et celui de l'**objet** de l'annonce, avec le modèle
-`paraphrase-multilingual-mpnet-base-v2` (sentence-transformers).
-
-### 4. Sélection
-`restitution.py` applique un seuil de score qui baisse quand le nombre de
-pôles matchés augmente :
-
-| `total_poles` | Score exigé |
-|---|---|
-| ≥ 3 | > 0.2 |
-| 2 | > 0.3 |
-| 1 | > 0.4 |
-| 0 | > 0.5 |
-
-Les annonces retenues sont marquées `rapporte = true` en base et envoyées au LLM.
-
-### 5. Analyse LLM
-`analyse.py` soumet chaque annonce retenue à Groq (modèle `openai/gpt-oss-120b`)
-avec le manifeste détaillé en contexte. Le modèle renvoie une phrase de
-pertinence et une note sur 5, stockées dans `analyse_pertinence` et
-`analyse_note`. Si l'appel échoue pour une annonce (timeout, quota, réponse
-invalide), elle reste sans analyse et la pipeline continue.
-
-### 6. Rapport et envoi
-Le rapport est construit à partir de la base, avec le même `depuis` que la
-collecte : il reflète donc exactement le lot traité par le run. Pour chaque
-annonce, il affiche l'acheteur, l'objet avec ses badges de pôles, les
-descripteurs, la famille et la procédure du marché, les dates de publication et
-de limite de réponse, le score de proximité, la note et la phrase du LLM, et le
-lien vers l'avis. Tri : note LLM décroissante, puis nombre de pôles, puis
-score. Les annonces sans note sont placées en dernier.
-
-`envoi_mail.py` envoie le fichier en pièce jointe, avec pour objet
-« veille appels d'offre boamp AAAA-MM-JJ ».
 
 ## Personnaliser la veille
 
 ### Textes de profil (`profil/`)
-Modifiables sans toucher au code. Le choix des fichiers se fait dans
-`src/profil.py` :
-- **manifeste court** (`CHEMIN_MANIFESTE`, actuellement
-  `manifeste_reciproque_2.txt`) : sert aux embeddings. Le modèle tronque
-  autour de 128 tokens, donc seul le début du texte compte. Un texte bref et
-  descriptif, sans critères d'exclusion, fonctionne mieux.
-- **manifeste LLM** (`manifeste_reciproque_llm.txt`) : contexte long fourni au
-  LLM, qui peut contenir des critères d'appréciation.
-
-`manifeste_reciproque_0.txt` et `manifeste_reciproque_1.txt` sont des variantes
-qui ne sont pas utilisées actuellement.
+Modifiables sans toucher au code ; les chemins sont dans `src/profil.py`.
+- `manifeste_reciproque_2.txt` : **manifeste court**, pour les embeddings. Le
+  modèle tronque autour de 128 tokens : texte bref et descriptif, sans
+  critères d'exclusion.
+- `manifeste_reciproque_llm.txt` : **manifeste détaillé**, contexte du LLM ;
+  peut contenir des critères d'appréciation.
 
 ### Mots-clés et clusters
 - Les mots-clés de `mots_cles.py` doivent être **en minuscules et sans
-  accents** : la correspondance est un simple test de sous-chaîne sur le texte
-  normalisé.
-- Ajouter un cluster demande trois modifications : l'entrée dans
-  `tagging.CLUSTERS`, la colonne `match_<nom>` (booléenne) dans la table
-  Supabase, et le libellé et la couleur du badge dans `rapport.COULEURS_TAGS`.
+  accents** (simple test de sous-chaîne sur le texte normalisé).
+- Ajouter un cluster demande : l'entrée dans `tagging.CLUSTERS`, la colonne
+  `match_<nom>` (integer) dans Supabase, et le libellé et la couleur du badge
+  dans `COULEURS_TAGS` de `web/index.html`.
 
 ### Après une modification
-La pipeline ne recalcule rien pour les annonces déjà en base : `total_poles`
-et `score_similarite` restent ceux calculés à l'ingestion. Selon ce qui a
-changé :
+La pipeline ne recalcule rien pour les annonces déjà en base.
 
 | Modification | À lancer |
 |---|---|
-| Seuils (`restitution.py`) | `recalculer_rapporte.py` |
-| Manifeste court | `recalculer_scores.py similarite`, puis `recalculer_rapporte.py` |
+| Seuils (`restitution.py`) | `recalculer_rapporte.py`, puis `recalculer_scores.py llm` |
+| Manifeste court | `recalculer_scores.py similarite`, `recalculer_rapporte.py`, puis `recalculer_scores.py llm` |
 | Manifeste LLM ou prompt | `recalculer_scores.py llm --reinitialiser` |
-| Mots-clés ou clusters | Aucun script ne re-tague l'existant : seules les nouvelles annonces en profitent. `recalculer_rapporte.py` ne fait que réappliquer les seuils aux tags déjà stockés. |
+| Mots-clés ou clusters | Aucun script ne re-tague l'existant : seules les nouvelles annonces en profitent. |
 
-Après un recalcul des scores ou des seuils, de nouvelles annonces peuvent
-passer le filtre sans avoir de note LLM : `recalculer_scores.py llm` (sans
-`--reinitialiser`) les analyse sans toucher aux notes existantes. Les analyses
-sont enregistrées par lots de 25, et l'option `--reinitialiser` vérifie que
-l'API répond avant d'effacer quoi que ce soit.
+`recalculer_scores.py llm` (sans `--reinitialiser`) sert à noter les annonces
+qui deviennent retenues après un recalcul, sans toucher aux notes existantes.
 
-### Analyse exploratoire
-`analyse_exploratoire.py` affiche trois graphiques sur tout l'historique
-stocké : score de similarité selon le nombre de tags, score selon la note LLM,
-et une heatmap tags × note LLM. Ses dépendances sont à part pour ne pas
-alourdir l'installation de la pipeline :
+## Base de données (Supabase)
 
-```bash
-pip install -r requirements-analyse.txt
-python src/analyse_exploratoire.py
-```
+Table `annonces_boamp`, clé `idweb` :
+- **champs BOAMP** : `objet`, `nomacheteur`, `code_departement`,
+  `dateparution`, `datelimitereponse` (texte ISO), `famille_libelle`,
+  `descripteur_libelle`, `procedure_libelle`, `url_avis` ;
+- **calculés par la pipeline** : `match_*`, `total_poles`, `score_similarite`,
+  `rapporte`, `analyse_pertinence`, `analyse_note`, `date_ingestion` (mise à
+  jour à chaque upsert) ;
+- **saisis sur la page** : `vue` (booléen), `note_humaine` (0 à 5) ;
+- **traçabilité** : `annotation_par` (email) et `annotation_le`, remplis par
+  le trigger `tracer_annotation` uniquement quand `vue` ou `note_humaine`
+  change.
 
-## Base de données
+Accès depuis la page :
+- RLS activée ; politiques `lecture` (SELECT) et `maj` (UPDATE) réservées au
+  rôle `authenticated` ; le rôle `anon` n'a aucun droit ;
+- `authenticated` ne peut modifier que les colonnes `vue` et `note_humaine`
+  (droits par colonne) ;
+- inscriptions publiques désactivées : les comptes (email + mot de passe) se
+  créent dans Authentication → Users ;
+- la clé publishable inscrite dans `web/index.html` est publique par
+  conception. N'y mettre **jamais** une clé secrète ou `service_role`.
 
-Table `annonces_boamp`, clé primaire `idweb` :
-- champs BOAMP : `objet`, `nomacheteur`, `code_departement`, `dateparution`,
-  `datelimitereponse`, `famille_libelle`, `descripteur_libelle`,
-  `procedure_libelle`, `url_avis` ;
-- calculés : `match_*`, `total_poles`, `score_similarite`, `rapporte`,
-  `analyse_pertinence`, `analyse_note`, `date_ingestion` (mise à jour à
-  chaque upsert) ;
-- revue manuelle : `vue` et `note_humaine`, qu'aucun script ne modifie.
+La pipeline se connecte directement en Postgres (`SUPABASE_DB_URL`) et n'est
+pas soumise à ces règles.
+
+Tout ce qui précède (table, droits, trigger) est dans
+[`sql/schema_supabase.sql`](sql/schema_supabase.sql), à exécuter dans le SQL
+editor de Supabase pour recréer le projet. Le script peut être relancé sans
+risque sur une base déjà à jour. Toute modification du schéma doit y être
+reportée.
 
 ## Structure du dépôt
 
 ```
 src/
-  main.py                 point d'entrée de la pipeline
-  ingestion.py            appel paginé à l'API BOAMP
-  mots_cles.py            listes de mots-clés par cluster
-  tagging.py              colonnes match_* et total_poles
-  scoring.py              embeddings et similarité cosinus
-  profil.py               chargement des manifestes
-  db.py                   connexion Supabase, upsert, lectures, analyses
-  restitution.py          seuils de sélection et tri
-  analyse.py              analyse de pertinence par Groq
-  rapport.py              génération du HTML (badges, notes, dates)
-  generer_rapport.py      rapport à partir de la base pour une date donnée
-  envoi_mail.py           envoi SMTP du rapport
-  recalculer_rapporte.py  recalcul de la colonne rapporte
-  recalculer_scores.py    recalcul des scores de similarité et des analyses LLM
-  analyse_exploratoire.py graphiques sur l'historique (hors pipeline)
-  utils.py                normalisation de texte, aplatissement
-profil/                   textes de profil (manifestes)
-test_connexion_db.py      vérification de la connexion Supabase
-.github/workflows/        exécution sur GitHub Actions
+  main.py                  point d'entrée de la pipeline
+  ingestion.py             appel paginé à l'API BOAMP
+  mots_cles.py             listes de mots-clés par cluster
+  tagging.py               colonnes match_* et total_poles
+  scoring.py               embeddings et similarité cosinus
+  profil.py                chargement des manifestes
+  db.py                    connexion, upsert, lectures, analyses, nettoyage
+  restitution.py           seuils de sélection et tri
+  analyse.py               analyse de pertinence par Groq
+  utils.py                 normalisation de texte, aplatissement
+  recalculer_scores.py     recalcul des scores de similarité et des analyses LLM
+  recalculer_rapporte.py   recalcul de la colonne rapporte
+  analyse_exploratoire.py  graphiques sur l'historique (hors pipeline)
+web/index.html             page de suivi des annonces
+profil/                    manifestes (court et LLM)
+sql/schema_supabase.sql    schéma, droits et trigger Supabase
+test_connexion_db.py       vérification de la connexion Supabase
+.github/workflows/         pipeline quotidienne et publication de la page
 ```
-
-`requirements-analyse.txt` (pandas, seaborn, matplotlib) ne sert qu'à
-`analyse_exploratoire.py`.
-
-## Exécution automatique (GitHub Actions)
-
-`.github/workflows/pipeline.yml` lance `python src/main.py` sous Python 3.11 et
-met en cache le modèle Hugging Face (`~/.cache/huggingface`). Il est
-actuellement **déclenché à la main uniquement** (`workflow_dispatch`). Pour un
-run quotidien :
-1. décommenter le bloc `schedule` (cron `0 6 * * *`, soit 8 h à Paris en été) ;
-2. ajouter les secrets `GROQ_API_KEY`, `SMTP_USER`, `SMTP_PASSWORD` et
-   `MAIL_DESTINATAIRE` dans le dépôt, puis décommenter les lignes `env`
-   correspondantes. Seul `SUPABASE_DB_URL` est transmis pour l'instant.
