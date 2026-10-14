@@ -10,10 +10,10 @@ matchés. Une annonce sans aucun pôle doit donc être très pertinente pour êt
 retenue, tandis qu'une annonce multi-pôles est retenue plus facilement.
 """
 
-SEUIL_SCORE_TRES_HAUT = 0.5
-SEUIL_SCORE_HAUT = 0.4
-SEUIL_SCORE_MOYEN = 0.3
-SEUIL_SCORE_BAS = 0.2
+SEUIL_SCORE_TRES_HAUT = 0.55
+SEUIL_SCORE_HAUT = 0.45
+SEUIL_SCORE_MOYEN = 0.35
+SEUIL_SCORE_BAS = 0.25
 
 
 def _est_retenue(total_poles: int, score: float) -> bool:
