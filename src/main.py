@@ -1,5 +1,5 @@
 """Point d'entrée du pipeline : collecte BOAMP -> tags -> scoring -> écriture en base
--> restitution -> analyse LLM.
+-> restitution -> analyse LLM -> suppression des annonces expirées depuis plus d'un mois.
 
 Les annonces retenues (colonne `rapporte`) sont consultées sur la page web
 (web/index.html), qui lit directement la base : aucun rapport n'est produit ici.
@@ -16,6 +16,7 @@ from db import (
     enregistrer_analyses,
     obtenir_connexion,
     obtenir_derniere_date_parution,
+    supprimer_annonces_expirees,
     upsert_annonces,
 )
 from ingestion import recuperer_annonces
@@ -54,16 +55,20 @@ def main():
         print(f"{len(resultats)} annonces enregistrées dans annonces_boamp.\n")
 
         a_restituer = restituer(resultats)
-        print(f"Restitution : {len(a_restituer)} annonce(s) retenue(s) sur {len(resultats)}.\n")
+        print(f"Restitution : {len(a_restituer)} annonces retenues sur {len(resultats)}.\n")
         for annonce, score in a_restituer:
             print(f"[poles={annonce['total_poles']}] {score:.3f}  {annonce['objet']}")
 
         annonces_a_analyser = [annonce for annonce, _ in a_restituer]
-        print(f"\nAnalyse LLM de {len(annonces_a_analyser)} annonce(s)…")
+        print(f"\nAnalyse LLM de {len(annonces_a_analyser)} annonces…")
         analyses = analyser_annonces(annonces_a_analyser)
         if analyses:
             enregistrer_analyses(conn, analyses)
-            print(f"{len(analyses)} analyse(s) enregistrée(s) en base.")
+            print(f"{len(analyses)} analyses enregistrées en base.")
+
+    nb_supprimees = supprimer_annonces_expirees(conn)
+    print(f"\nSuppression de {nb_supprimees} annonce(s) expirée(s) depuis plus d'un mois."
+          "(les annonces évaluées sont conservées).")
 
     conn.close()
 

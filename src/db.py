@@ -97,3 +97,24 @@ def enregistrer_analyses(conn, analyses: dict[str, dict]) -> None:
                 (analyse["analyse_pertinence"], analyse["analyse_note"], idweb),
             )
     conn.commit()
+
+def supprimer_annonces_expirees(conn, delai: str = "1 month") -> int:
+    """Supprime les annonces dont la date limite de réponse est dépassée depuis
+    plus de `delai` (intervalle Postgres), sauf celles évaluées par l'équipe
+    (note_humaine renseignée), conservées pour comparer note humaine, note LLM
+    et score. Retourne le nombre de lignes supprimées.
+
+    Les annonces supprimées ne reviennent pas : l'ingestion ne collecte que
+    les avis dont la date limite n'est pas dépassée."""
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            DELETE FROM annonces_boamp
+            WHERE datelimitereponse::timestamptz < now() - %s::interval
+              AND note_humaine IS NULL;
+            """,
+            (delai,),
+        )
+        nb_supprimees = cur.rowcount
+    conn.commit()
+    return nb_supprimees
