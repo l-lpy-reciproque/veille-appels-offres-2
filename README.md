@@ -48,6 +48,9 @@ manque, le rapport est généré mais pas envoyé.
 | `python src/main.py` | Run complet : collecte, tags, score, écriture en base, analyse LLM, rapport, mail. |
 | `python src/generer_rapport.py 2026-09-01` | Régénère un rapport HTML depuis la base pour les annonces publiées à partir de cette date (sans argument : 7 derniers jours). Aucune collecte, aucun appel LLM. |
 | `python src/recalculer_rapporte.py` | Recalcule la colonne `rapporte` de toute la table. À lancer après toute modification des seuils ou des mots-clés. |
+| `python src/recalculer_scores.py similarite` | Recalcule `score_similarite` pour toute la table avec le manifeste court actuel. |
+| `python src/recalculer_scores.py llm` | Analyse par le LLM les annonces retenues qui n'ont pas encore de note (reprise possible après un quota Groq épuisé). Avec `--reinitialiser` : efface toutes les analyses puis ré-analyse toutes les annonces retenues. |
+| `python src/analyse_exploratoire.py` | Graphiques sur tout l'historique (dépendances : `requirements-analyse.txt`). |
 | `python test_connexion_db.py` | Vérifie la connexion Supabase et affiche le nombre de lignes. |
 
 Les rapports sont écrits dans le répertoire courant sous le nom
@@ -137,11 +140,33 @@ qui ne sont pas utilisées actuellement.
   Supabase, et le libellé et la couleur du badge dans `rapport.COULEURS_TAGS`.
 
 ### Après une modification
-Les annonces déjà en base ne sont **ni re-taguées ni re-scorées** :
-`total_poles` et `score_similarite` restent ceux calculés à l'ingestion.
-Après avoir changé les seuils, les mots-clés ou le manifeste, lancez
-`python src/recalculer_rapporte.py`, qui recalcule `rapporte` à partir des
-valeurs stockées.
+La pipeline ne recalcule rien pour les annonces déjà en base : `total_poles`
+et `score_similarite` restent ceux calculés à l'ingestion. Selon ce qui a
+changé :
+
+| Modification | À lancer |
+|---|---|
+| Seuils (`restitution.py`) | `recalculer_rapporte.py` |
+| Manifeste court | `recalculer_scores.py similarite`, puis `recalculer_rapporte.py` |
+| Manifeste LLM ou prompt | `recalculer_scores.py llm --reinitialiser` |
+| Mots-clés ou clusters | Aucun script ne re-tague l'existant : seules les nouvelles annonces en profitent. `recalculer_rapporte.py` ne fait que réappliquer les seuils aux tags déjà stockés. |
+
+Après un recalcul des scores ou des seuils, de nouvelles annonces peuvent
+passer le filtre sans avoir de note LLM : `recalculer_scores.py llm` (sans
+`--reinitialiser`) les analyse sans toucher aux notes existantes. Les analyses
+sont enregistrées par lots de 25, et l'option `--reinitialiser` vérifie que
+l'API répond avant d'effacer quoi que ce soit.
+
+### Analyse exploratoire
+`analyse_exploratoire.py` affiche trois graphiques sur tout l'historique
+stocké : score de similarité selon le nombre de tags, score selon la note LLM,
+et une heatmap tags × note LLM. Ses dépendances sont à part pour ne pas
+alourdir l'installation de la pipeline :
+
+```bash
+pip install -r requirements-analyse.txt
+python src/analyse_exploratoire.py
+```
 
 ## Base de données
 
@@ -171,15 +196,16 @@ src/
   generer_rapport.py      rapport à partir de la base pour une date donnée
   envoi_mail.py           envoi SMTP du rapport
   recalculer_rapporte.py  recalcul de la colonne rapporte
+  recalculer_scores.py    recalcul des scores de similarité et des analyses LLM
+  analyse_exploratoire.py graphiques sur l'historique (hors pipeline)
   utils.py                normalisation de texte, aplatissement
 profil/                   textes de profil (manifestes)
 test_connexion_db.py      vérification de la connexion Supabase
 .github/workflows/        exécution sur GitHub Actions
 ```
 
-`requirements-analyse.txt` (pandas, seaborn, matplotlib) n'est pas nécessaire
-à la pipeline. Il servait à un script d'analyse exploratoire qui n'est plus
-dans le dépôt.
+`requirements-analyse.txt` (pandas, seaborn, matplotlib) ne sert qu'à
+`analyse_exploratoire.py`.
 
 ## Exécution automatique (GitHub Actions)
 

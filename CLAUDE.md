@@ -13,6 +13,9 @@ pip install -r requirements.txt          # a local venv/ exists at repo root
 python src/main.py                        # full pipeline run (entry point)
 python src/generer_rapport.py 2026-09-01  # rebuild an HTML report from the DB for dateparution >= date (default: last 7 days)
 python src/recalculer_rapporte.py         # recompute the `rapporte` column for the whole table
+python src/recalculer_scores.py similarite        # recompute score_similarite for every row with the current manifesto
+python src/recalculer_scores.py llm [--reinitialiser]  # LLM-rate retained rows lacking a note (or wipe all notes and redo)
+python src/analyse_exploratoire.py        # ad hoc plots over the whole history (needs requirements-analyse.txt)
 python test_connexion_db.py               # sanity check of the Supabase connection (not a test suite)
 ```
 
@@ -30,7 +33,7 @@ CI: `.github/workflows/pipeline.yml` runs `python src/main.py` on Python 3.11, c
 - on `(annonce, score)` tuples for the current run (`est_retenue`, `restituer`), sorted by (total_poles, score). These decide what gets sent to the LLM and set the `rapporte` flag before the upsert.
 - on flat DB rows (`filtrer_trier_lignes`), sorted by (LLM note, total_poles, score), with rows that have no note placed last. These are used by the report and by `recalculer_rapporte.py`.
 
-Both go through `_est_retenue`. When you change thresholds, the clusters in `mots_cles.py`, or the manifesto, existing rows are **not** re-tagged or re-scored (`total_poles` and `score_similarite` are frozen at ingestion). Run `recalculer_rapporte.py` afterwards; it only recomputes `rapporte` from the stored values.
+Both go through `_est_retenue`. When you change thresholds, the clusters in `mots_cles.py`, or the manifesto, the pipeline does **not** re-tag or re-score existing rows (`total_poles` and `score_similarite` are frozen at ingestion). After a manifesto change, run `recalculer_scores.py similarite`; after threshold or score changes, run `recalculer_rapporte.py` (it only recomputes `rapporte` from stored values), then `recalculer_scores.py llm` to rate newly retained rows. Nothing re-tags existing rows after a keyword/cluster change. `recalculer_scores.py` does not touch `rapporte`.
 
 **Tag clusters drive DB columns.** `tagging.CLUSTERS` (column name → keyword list) defines the `match_*` columns, and `db.COLONNES_TAGS` is derived from it. Adding a cluster therefore requires adding the column in Supabase and an entry in `rapport.COULEURS_TAGS` (badge label and color). Keywords in `mots_cles.py` must be lowercase and accent-free, because matching is a plain substring test on text normalized by `utils.normaliser` over `objet`, `nomacheteur` and `descripteur_libelle`.
 
@@ -44,6 +47,6 @@ Only the `objet` field is embedded for scoring.
 
 **Ingestion.** `ingestion.py` queries the OpenDataSoft BOAMP API with an ODSQL `where` clause: exact match on `MOTS_CLES_DESCRIPTEURS_METIER` (a controlled BOAMP vocabulary) plus `datelimitereponse >= now()`. It is paginated and capped by `MAX_ANNONCES`.
 
-## Leftovers
+## Off-pipeline scripts
 
-`requirements-analyse.txt` (pandas/seaborn/matplotlib) belonged to an exploratory analysis script that is no longer in the repo; it is not needed by the pipeline.
+`recalculer_scores.py` and `analyse_exploratoire.py` are run by hand and are not called by `main.py`. `analyse_exploratoire.py` has its own dependencies in `requirements-analyse.txt` (pandas/seaborn/matplotlib), kept separate so the CI install stays light.
