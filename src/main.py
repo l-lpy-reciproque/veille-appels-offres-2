@@ -1,5 +1,8 @@
 """Point d'entrée du pipeline : collecte BOAMP -> tags -> scoring -> écriture en base
--> restitution -> analyse LLM -> génération du rapport du jour -> envoi par mail.
+-> restitution -> analyse LLM.
+
+Les annonces retenues (colonne `rapporte`) sont consultées sur la page web
+(web/index.html), qui lit directement la base : aucun rapport n'est produit ici.
 
 Exécution locale :  python src/main.py
 """
@@ -15,8 +18,6 @@ from db import (
     obtenir_derniere_date_parution,
     upsert_annonces,
 )
-from envoi_mail import configurer_email_disponible, envoyer_rapport
-from generer_rapport import generer_et_ecrire
 from ingestion import recuperer_annonces
 from profil import charger_manifeste
 from restitution import est_retenue, restituer
@@ -65,19 +66,6 @@ def main():
             print(f"{len(analyses)} analyse(s) enregistrée(s) en base.")
 
     conn.close()
-
-    # Génération du rapport du jour : lit en base, donc récupère les analyses
-    # qui viennent d'être écrites. On réutilise "depuis" (le curseur incrémental
-    # de cette exécution) plutôt que la date du jour, pour que le rapport reflète
-    # exactement le lot d'annonces traité par ce run.
-    nom_fichier = generer_et_ecrire(depuis)
-    print(f"\nRapport du jour généré : {nom_fichier}")
-
-    if configurer_email_disponible():
-        envoyer_rapport(nom_fichier)
-        print(f"Rapport envoyé par mail (objet : veille appels d'offre boamp {date.today().isoformat()}).")
-    else:
-        print("SMTP non configuré : envoi par mail ignoré.")
 
 
 if __name__ == "__main__":
