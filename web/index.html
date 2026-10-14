@@ -211,10 +211,12 @@ function lienSur(url) {
 
 // --- Tri et filtres ---------------------------------------------------------
 
-// Même ordre que restitution.filtrer_trier_lignes : note LLM (sans note en
-// dernier), puis nombre de pôles, puis score de similarité ; tout décroissant.
+// Les plus récentes d'abord (dateparution, AAAA-MM-JJ). À date égale, même
+// ordre que restitution.filtrer_trier_lignes : note LLM (sans note en dernier),
+// puis nombre de pôles, puis score de similarité ; tout décroissant.
 function comparer(a, b) {
   return (
+    (b.dateparution || "").localeCompare(a.dateparution || "") ||
     (b.analyse_note ?? -1) - (a.analyse_note ?? -1) ||
     (b.total_poles ?? 0) - (a.total_poles ?? 0) ||
     (b.score_similarite ?? 0) - (a.score_similarite ?? 0)
