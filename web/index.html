@@ -330,8 +330,8 @@ function afficher() {
   const visibles = annoncesVisibles();
   const nbVues = annonces.filter((a) => a.vue).length;
   $("compteur").textContent =
-    `${visibles.length} annonce(s) affichée(s) sur ${annonces.length} — ` +
-    `${nbVues} vue(s), ${annonces.length - nbVues} non vue(s)`;
+    `${visibles.length} annonces affichées sur ${annonces.length} — ` +
+    `${nbVues} vues, ${annonces.length - nbVues} non vues`;
   $("lignes").replaceChildren(...visibles.map(ligneAnnonce));
 }
 
@@ -354,9 +354,9 @@ async function afficherNouveautes() {
     .eq("dateparution", jour);
   const retenues = annonces.filter((a) => a.dateparution === jour).length;
   $("nouveautes").textContent = error
-    ? `Aujourd'hui : ${retenues} annonce(s) retenue(s)`
-    : `Aujourd'hui (${formaterDate(jour)}) : ${count} nouvelle(s) annonce(s) collectée(s), ` +
-      `dont ${retenues} retenue(s)`;
+    ? `Aujourd'hui : ${retenues} annonces retenues`
+    : `Aujourd'hui (${formaterDate(jour)}) : ${count} nouvelles annonces collectées, ` +
+      `dont ${retenues} retenues`;
 }
 
 async function charger() {
