@@ -11,7 +11,7 @@ Deux fichiers distincts, car ils servent deux usages différents :
 from pathlib import Path
 
 DOSSIER_PROFIL = Path(__file__).parent.parent / "profil"
-CHEMIN_MANIFESTE = DOSSIER_PROFIL / "manifeste_reciproque_1.txt"
+CHEMIN_MANIFESTE = DOSSIER_PROFIL / "manifeste_reciproque_2.txt"
 CHEMIN_MANIFESTE_LLM = DOSSIER_PROFIL / "manifeste_reciproque_llm.txt"
 
 
