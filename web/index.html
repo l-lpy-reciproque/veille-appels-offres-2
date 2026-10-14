@@ -24,7 +24,7 @@
   h1 { font-size: 22px; margin: 0 0 4px; }
   .entete { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
   .sous-titre { color: #6e6e73; margin-bottom: 16px; font-size: 14px; }
-  .nouveautes { font-size: 15px; font-weight: 600; margin: 8px 0 4px; }
+  .nouveautes { font-size: 15px; margin: 8px 0 4px; }
   .utilisateur { font-size: 13px; color: #6e6e73; }
   button {
     font: inherit; font-size: 13px; cursor: pointer; border: 1px solid #d2d2d7;
@@ -61,7 +61,7 @@
   }
   td { padding: 14px; border-top: 1px solid #ececec; font-size: 14px; vertical-align: top; }
   .objet { font-weight: 600; margin-bottom: 6px; line-height: 1.35; }
-  .score { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .score { font-variant-numeric: tabular-nums; white-space: nowrap; }
   .gris { color: #6e6e73; margin-top: 4px; }
   .limite { color: #e5441a; margin-top: 4px; font-weight: 600; }
   .vide { color: #999; }
@@ -353,10 +353,10 @@ async function afficherNouveautes() {
     .select("idweb", { count: "exact", head: true })
     .eq("dateparution", jour);
   const retenues = annonces.filter((a) => a.dateparution === jour).length;
-  $("nouveautes").textContent = error
-    ? `Aujourd'hui : ${retenues} annonces retenues`
-    : `Aujourd'hui (${formaterDate(jour)}) : ${count} nouvelles annonces collectées, ` +
-      `dont ${retenues} retenues`;
+  const enGras = el("strong", { textContent: `${retenues} retenues` });
+  $("nouveautes").replaceChildren(...(error
+    ? ["Aujourd'hui : ", enGras]
+    : [`Aujourd'hui (${formaterDate(jour)}) : ${count} nouvelles annonces collectées, dont `, enGras]));
 }
 
 async function charger() {
