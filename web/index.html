@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Veille appels d'offres</title>
+<!--
+  Page de suivi des annonces BOAMP retenues par la pipeline.
+
+  Lit directement la table annonces_boamp dans Supabase (aucune régénération
+  quotidienne) : annonces marquées `rapporte`, plus celles déjà notées par
+  l'équipe, même si elles ne passent plus le filtre.
+  Seules les colonnes `vue` et `note_humaine` sont modifiables depuis la page
+  (droits par colonne + RLS côté Supabase, rôle authenticated uniquement).
+
+  La clé anon/publishable ci-dessous est publique par conception : sans
+  connexion, elle ne donne accès à rien.
+-->
+<style>
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: #f5f5f7; margin: 0; padding: 32px; color: #1d1d1f;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .entete { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  .sous-titre { color: #6e6e73; margin-bottom: 16px; font-size: 14px; }
+  .utilisateur { font-size: 13px; color: #6e6e73; }
+  button {
+    font: inherit; font-size: 13px; cursor: pointer; border: 1px solid #d2d2d7;
+    background: #fff; border-radius: 8px; padding: 5px 12px; color: #1d1d1f;
+  }
+  button:hover { background: #f0f0f2; }
+
+  /* Connexion */
+  #connexion {
+    max-width: 340px; margin: 80px auto; background: #fff; padding: 28px;
+    border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  #connexion label { display: block; font-size: 13px; color: #555; margin: 14px 0 4px; }
+  #connexion input { width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 14px; border: 1px solid #d2d2d7; border-radius: 8px; }
+  #connexion button { margin-top: 18px; width: 100%; padding: 9px; background: #1d1d1f; color: #fff; border: none; }
+  .erreur { color: #c62828; font-size: 13px; margin-top: 12px; min-height: 1em; }
+
+  /* Filtres */
+  .filtres {
+    display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+    font-size: 13px; color: #555; margin-bottom: 16px;
+  }
+  .filtres input[type=date], .filtres input[type=search] {
+    font: inherit; padding: 4px 8px; border: 1px solid #d2d2d7; border-radius: 8px;
+  }
+
+  /* Tableau (mêmes styles que le rapport HTML de rapport.py) */
+  .conteneur-tableau { overflow-x: auto; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+  table { width: 100%; border-collapse: collapse; background: #fff; min-width: 1150px; }
+  th.col-analyse { min-width: 200px; }
+  th {
+    text-align: left; background: #efeff1; padding: 12px 14px; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.04em; color: #555;
+  }
+  td { padding: 14px; border-top: 1px solid #ececec; font-size: 14px; vertical-align: top; }
+  .objet { font-weight: 600; margin-bottom: 6px; line-height: 1.35; }
+  .score { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+  .gris { color: #6e6e73; margin-top: 4px; }
+  .limite { color: #e5441a; margin-top: 4px; font-weight: 600; }
+  .vide { color: #999; }
+  .badge {
+    color: #fff; padding: 3px 11px; border-radius: 12px; font-size: 12px;
+    margin: 0 6px 4px 0; display: inline-block;
+  }
+  .badge-note {
+    color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 12px;
+    font-weight: 600; white-space: nowrap;
+  }
+  a { color: #1565c0; text-decoration: none; font-weight: 500; }
+  a:hover { text-decoration: underline; }
+
+  /* Annotations */
+  td.case-vue { text-align: center; }
+  td.case-vue input { width: 18px; height: 18px; cursor: pointer; }
+  tr.vue td { background: #f4f4f6; }
+  tr.vue td > * { opacity: 0.5; }
+  tr.vue td.case-vue > *, tr.vue td.note-equipe > * { opacity: 1; }
+  .notes { display: flex; flex-direction: column; gap: 3px; }
+  .notes button { padding: 3px 0; width: 26px; border-radius: 6px; font-variant-numeric: tabular-nums; }
+  .notes button.active { color: #fff; border-color: transparent; font-weight: 600; }
+  .trace { font-size: 11px; color: #8e8e93; margin-top: 6px; line-height: 1.3; }
+
+  @media (max-width: 700px) {
+    body { padding: 16px; }
+  }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+</head>
+<body>
+
+<form id="connexion" hidden>
+  <h1>Veille appels d'offres</h1>
+  <div class="sous-titre">reciproque — accès réservé</div>
+  <label for="email">Email</label>
+  <input id="email" type="email" autocomplete="username" required>
+  <label for="mot-de-passe">Mot de passe</label>
+  <input id="mot-de-passe" type="password" autocomplete="current-password" required>
+  <button type="submit">Se connecter</button>
+  <div class="erreur" id="erreur-connexion"></div>
+</form>
+
+<main id="application" hidden>
+  <div class="entete">
+    <h1>Veille appels d'offres — reciproque</h1>
+    <div class="utilisateur"><span id="email-utilisateur"></span> · <button id="deconnexion" type="button">Se déconnecter</button></div>
+  </div>
+  <div class="sous-titre" id="compteur">Chargement…</div>
+
+  <div class="filtres">
+    <label><input type="checkbox" id="masquer-vues"> Masquer les annonces vues</label>
+    <label><input type="checkbox" id="masquer-expirees" checked> Masquer les annonces dont la date limite est passée</label>
+    <label>Publiées depuis le <input type="date" id="depuis"></label>
+    <label><input type="search" id="recherche" placeholder="Rechercher (objet, acheteur…)"></label>
+  </div>
+
+  <div class="conteneur-tableau">
+    <table>
+      <thead>
+        <tr>
+          <th>Acheteur</th>
+          <th>Objet</th>
+          <th>Descripteurs</th>
+          <th>Marché</th>
+          <th>Dates</th>
+          <th>Proximité Reciproque</th>
+          <th class="col-analyse">Analyse LLM</th>
+          <th>Note équipe</th>
+          <th>Avis</th>
+          <th>Vue</th>
+        </tr>
+      </thead>
+      <tbody id="lignes"></tbody>
+    </table>
+  </div>
+</main>
+
+<script>
+// --- Configuration Supabase (Project Settings → API Keys) -------------------
+const SUPABASE_URL = "https://ebwifdmbdialwdsplhsl.supabase.co";
+const SUPABASE_CLE_PUBLIQUE = "sb_publishable_PTTFRwEG-DEVQZYMbWqxaQ_kH6pDJda";
+
+// Même correspondance que rapport.COULEURS_TAGS : à garder synchronisée.
+const COULEURS_TAGS = {
+  match_prestations: ["Prestations", "#42a016"],
+  match_numerique_multimedia: ["Numérique / Multimédia", "#1e65b5"],
+  match_museo_sceno: ["Muséo / Scéno", "#c7208a"],
+  match_secteurs_transverses: ["Secteurs transverses", "#cd6409"],
+  match_institutions: ["Institutions", "#931cae"],
+};
+
+const COLONNES = [
+  "idweb", "objet", "nomacheteur", "code_departement", "dateparution",
+  "datelimitereponse", "famille_libelle", "descripteur_libelle",
+  "procedure_libelle", "url_avis", "score_similarite", "total_poles",
+  "analyse_pertinence", "analyse_note", "vue", "note_humaine",
+  "annotation_par", "annotation_le", ...Object.keys(COULEURS_TAGS),
+].join(",");
+
+const TAILLE_PAGE = 1000; // limite par défaut de l'API Supabase
+
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIQUE);
+let annonces = [];
+
+const $ = (id) => document.getElementById(id);
+
+// --- Utilitaires d'affichage ------------------------------------------------
+
+function el(balise, proprietes = {}, enfants = []) {
+  const noeud = document.createElement(balise);
+  Object.assign(noeud, proprietes);
+  for (const enfant of [].concat(enfants)) {
+    if (enfant != null) noeud.append(enfant);
+  }
+  return noeud;
+}
+
+const tiret = () => el("span", { className: "vide", textContent: "—" });
+
+function formaterDate(valeur, avecHeure = false) {
+  if (!valeur) return "";
+  const date = new Date(valeur);
+  if (isNaN(date)) return String(valeur);
+  const options = { day: "2-digit", month: "2-digit", year: "numeric" };
+  if (avecHeure) Object.assign(options, { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleString("fr-FR", options);
+}
+
+// Rouge (0) -> vert (5), comme rapport._badge_note.
+const couleurNote = (note) => `hsl(${(Math.max(0, Math.min(5, note)) / 5) * 120}, 70%, 42%)`;
+
+function badgeNote(note) {
+  const badge = el("span", { className: "badge-note", textContent: `${note}/5` });
+  badge.style.background = couleurNote(note);
+  return badge;
+}
+
+function lienSur(url) {
+  try {
+    const u = new URL(url);
+    return u.protocol === "http:" || u.protocol === "https:" ? u.href : null;
+  } catch {
+    return null;
+  }
+}
+
+// --- Tri et filtres ---------------------------------------------------------
+
+// Même ordre que restitution.filtrer_trier_lignes : note LLM (sans note en
+// dernier), puis nombre de pôles, puis score de similarité ; tout décroissant.
+function comparer(a, b) {
+  return (
+    (b.analyse_note ?? -1) - (a.analyse_note ?? -1) ||
+    (b.total_poles ?? 0) - (a.total_poles ?? 0) ||
+    (b.score_similarite ?? 0) - (a.score_similarite ?? 0)
+  );
+}
+
+function estExpiree(annonce) {
+  if (!annonce.datelimitereponse) return false;
+  const limite = new Date(annonce.datelimitereponse);
+  return !isNaN(limite) && limite < new Date();
+}
+
+function annoncesVisibles() {
+  const masquerVues = $("masquer-vues").checked;
+  const masquerExpirees = $("masquer-expirees").checked;
+  const depuis = $("depuis").value; // AAAA-MM-JJ, comparable à dateparution
+  const recherche = $("recherche").value.trim().toLowerCase();
+
+  return annonces.filter((a) =>
+    !(masquerVues && a.vue) &&
+    !(masquerExpirees && estExpiree(a)) &&
+    !(depuis && (a.dateparution || "") < depuis) &&
+    !(recherche && ![a.objet, a.nomacheteur, a.descripteur_libelle]
+      .some((champ) => (champ || "").toLowerCase().includes(recherche)))
+  );
+}
+
+// --- Rendu ------------------------------------------------------------------
+
+function celluleVue(annonce, ligne) {
+  const caseVue = el("input", { type: "checkbox", checked: annonce.vue, title: "Marquer comme vue" });
+  caseVue.addEventListener("change", () =>
+    enregistrer(annonce, { vue: caseVue.checked }, ligne));
+  return el("td", { className: "case-vue" }, caseVue);
+}
+
+function celluleNoteEquipe(annonce, ligne) {
+  const boutons = [5, 4, 3, 2, 1, 0].map((note) => {
+    const bouton = el("button", { type: "button", textContent: note });
+    if (annonce.note_humaine === note) {
+      bouton.classList.add("active");
+      bouton.style.background = couleurNote(note);
+      bouton.title = "Cliquer pour retirer la note";
+    }
+    // Cliquer sur la note déjà choisie l'efface.
+    bouton.addEventListener("click", () => enregistrer(
+      annonce, { note_humaine: annonce.note_humaine === note ? null : note }, ligne));
+    return bouton;
+  });
+
+  const trace = annonce.annotation_par
+    ? el("div", { className: "trace", textContent:
+        `${annonce.annotation_par}, le ${formaterDate(annonce.annotation_le, true)}` })
+    : null;
+
+  return el("td", { className: "note-equipe" }, [el("div", { className: "notes" }, boutons), trace]);
+}
+
+function ligneAnnonce(annonce) {
+  const ligne = el("tr");
+  ligne.classList.toggle("vue", annonce.vue);
+
+  const badges = Object.entries(COULEURS_TAGS)
+    .filter(([colonne]) => annonce[colonne])
+    .map(([, [libelle, couleur]]) => {
+      const badge = el("span", { className: "badge", textContent: libelle });
+      badge.style.background = couleur;
+      return badge;
+    });
+
+  const analyse = annonce.analyse_note == null && !annonce.analyse_pertinence
+    ? [tiret()]
+    : [
+        annonce.analyse_note != null ? badgeNote(annonce.analyse_note) : null,
+        annonce.analyse_pertinence
+          ? el("div", { textContent: annonce.analyse_pertinence, style: "margin-top:6px;line-height:1.35;" })
+          : null,
+      ];
+
+  const url = lienSur(annonce.url_avis);
+
+  ligne.append(
+    el("td", {}, [
+      el("div", { textContent: annonce.nomacheteur || "—" }),
+      el("div", { className: "gris", textContent: annonce.code_departement || "—" }),
+    ]),
+    el("td", {}, [
+      el("div", { className: "objet", textContent: annonce.objet || "" }),
+      el("div", {}, badges.length ? badges : tiret()),
+    ]),
+    el("td", { textContent: annonce.descripteur_libelle || "" }),
+    el("td", {}, [
+      el("div", { textContent: annonce.famille_libelle || "—" }),
+      el("div", { className: "gris", textContent: annonce.procedure_libelle || "—" }),
+    ]),
+    el("td", {}, [
+      el("div", { textContent: `Publié le ${formaterDate(annonce.dateparution) || "—"}` }),
+      el("div", { className: "limite", textContent: `Limite : ${formaterDate(annonce.datelimitereponse, true) || "—"}` }),
+    ]),
+    el("td", { className: "score", textContent: (annonce.score_similarite ?? 0).toFixed(3) }),
+    el("td", {}, analyse),
+    celluleNoteEquipe(annonce, ligne),
+    el("td", {}, url ? el("a", { href: url, target: "_blank", rel: "noopener", textContent: "Voir l'avis" }) : tiret()),
+    celluleVue(annonce, ligne),
+  );
+  return ligne;
+}
+
+function afficher() {
+  const visibles = annoncesVisibles();
+  const nbVues = annonces.filter((a) => a.vue).length;
+  $("compteur").textContent =
+    `${visibles.length} annonce(s) affichée(s) sur ${annonces.length} — ` +
+    `${nbVues} vue(s), ${annonces.length - nbVues} non vue(s)`;
+  $("lignes").replaceChildren(...visibles.map(ligneAnnonce));
+}
+
+// --- Données ----------------------------------------------------------------
+
+async function charger() {
+  const resultat = [];
+  for (let debut = 0; ; debut += TAILLE_PAGE) {
+    const { data, error } = await client
+      .from("annonces_boamp")
+      .select(COLONNES)
+      // Annonces retenues par la pipeline, plus celles déjà notées par l'équipe.
+      .or("rapporte.eq.true,note_humaine.not.is.null")
+      .order("idweb")
+      .range(debut, debut + TAILLE_PAGE - 1);
+    if (error) throw error;
+    resultat.push(...data);
+    if (data.length < TAILLE_PAGE) break;
+  }
+  annonces = resultat.sort(comparer);
+  afficher();
+}
+
+async function enregistrer(annonce, modifications, ligne) {
+  const { data, error } = await client
+    .from("annonces_boamp")
+    .update(modifications)
+    .eq("idweb", annonce.idweb)
+    .select("vue,note_humaine,annotation_par,annotation_le");
+
+  if (error || !data?.length) {
+    alert(`Enregistrement impossible : ${error?.message || "aucune ligne modifiée"}`);
+    ligne.replaceWith(ligneAnnonce(annonce)); // revient à l'état en base
+    return;
+  }
+  Object.assign(annonce, data[0]);
+  afficher();
+}
+
+// --- Session ----------------------------------------------------------------
+
+async function afficherSelonSession(session) {
+  $("connexion").hidden = !!session;
+  $("application").hidden = !session;
+  if (!session) return;
+  $("email-utilisateur").textContent = session.user.email;
+  try {
+    await charger();
+  } catch (erreur) {
+    $("compteur").textContent = `Erreur de chargement : ${erreur.message}`;
+  }
+}
+
+$("connexion").addEventListener("submit", async (evenement) => {
+  evenement.preventDefault();
+  $("erreur-connexion").textContent = "";
+  const { data, error } = await client.auth.signInWithPassword({
+    email: $("email").value,
+    password: $("mot-de-passe").value,
+  });
+  if (error) {
+    $("erreur-connexion").textContent = "Email ou mot de passe incorrect.";
+    return;
+  }
+  afficherSelonSession(data.session);
+});
+
+$("deconnexion").addEventListener("click", async () => {
+  await client.auth.signOut();
+  annonces = [];
+  afficherSelonSession(null);
+});
+
+for (const id of ["masquer-vues", "masquer-expirees", "depuis", "recherche"]) {
+  $(id).addEventListener("input", afficher);
+}
+
+client.auth.getSession().then(({ data }) => afficherSelonSession(data.session));
+</script>
+</body>
+</html>
