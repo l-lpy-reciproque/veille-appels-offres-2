@@ -19,7 +19,7 @@ from envoi_mail import configurer_email_disponible, envoyer_rapport
 from generer_rapport import generer_et_ecrire
 from ingestion import recuperer_annonces
 from profil import charger_manifeste
-from restitution import restituer
+from restitution import est_retenue, restituer
 from scoring import charger_modele, scorer_annonces
 from tagging import tagger_annonces
 
@@ -46,6 +46,9 @@ def main():
         modele = charger_modele()
         resultats = scorer_annonces(modele, manifeste, annonces)
 
+        for annonce, score in resultats:
+            annonce["rapporte"] = est_retenue((annonce, score))
+        
         upsert_annonces(conn, resultats)
         print(f"{len(resultats)} annonces enregistrées dans annonces_boamp.\n")
 

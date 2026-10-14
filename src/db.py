@@ -13,8 +13,8 @@ COLONNES_TAGS = list(CLUSTERS.keys()) + ["total_poles"]
 COLONNES_BASE = [
     "idweb", "objet", "nomacheteur", "code_departement", "dateparution",
     "datelimitereponse", "famille_libelle", "descripteur_libelle",
-    "procedure_libelle", "url_avis", "score_similarite",
-]
+    "procedure_libelle", "url_avis", "score_similarite", "rapporte"
+    ]
 
 TOUTES_COLONNES = COLONNES_BASE + COLONNES_TAGS
 
@@ -65,6 +65,7 @@ def upsert_annonces(conn, resultats: list[tuple[dict, float]]) -> None:
                 annonce.get("procedure_libelle"),
                 annonce.get("url_avis"),
                 score,
+                bool(annonce.get("rapporte", False)),
             ] + [annonce.get(colonne) for colonne in COLONNES_TAGS]
 
             cur.execute(
