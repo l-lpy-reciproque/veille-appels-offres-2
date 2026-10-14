@@ -1,0 +1,77 @@
+"""Filtrage et tri des annonces pour la restitution finale.
+
+Deux usages : sur les tuples (annonce, score) du run courant (est_retenue,
+trier_annonces, restituer), et sur des lignes plates issues directement de
+Supabase pour une restitution a posteriori sur une plage de dates choisie
+(filtrer_trier_lignes).
+
+Règle de sélection : le seuil de score exigé décroît avec le nombre de pôles
+matchés. Une annonce sans aucun pôle doit donc être très pertinente pour être
+retenue, tandis qu'une annonce multi-pôles est retenue plus facilement.
+"""
+
+SEUIL_SCORE_TRES_HAUT = 0.5
+SEUIL_SCORE_HAUT = 0.4
+SEUIL_SCORE_MOYEN = 0.3
+SEUIL_SCORE_BAS = 0.2
+
+
+def _est_retenue(total_poles: int, score: float) -> bool:
+    if total_poles >= 3:
+        return score > SEUIL_SCORE_BAS
+    if total_poles == 2:
+        return score > SEUIL_SCORE_MOYEN
+    if total_poles == 1:
+        return score > SEUIL_SCORE_HAUT
+    return score > SEUIL_SCORE_TRES_HAUT
+
+
+def _cle_tri(total_poles: int, score: float) -> tuple[int, float]:
+    # Tri principal sur le nombre de pôles, secondaire sur le score.
+    return (total_poles, score)
+
+
+def est_retenue(annonce_score: tuple[dict, float]) -> bool:
+    """Pour les tuples (annonce, score) issus du run courant."""
+    annonce, score = annonce_score
+    return _est_retenue(annonce.get("total_poles", 0), score)
+
+
+def trier_annonces(resultats: list[tuple[dict, float]]) -> list[tuple[dict, float]]:
+    return sorted(
+        resultats,
+        key=lambda ann_score: _cle_tri(ann_score[0].get("total_poles", 0), ann_score[1]),
+        reverse=True,
+    )
+
+
+def restituer(resultats: list[tuple[dict, float]]) -> list[tuple[dict, float]]:
+    """Applique le filtre puis le tri sur les résultats du run courant."""
+    return trier_annonces([r for r in resultats if est_retenue(r)])
+
+        
+def _cle_tri_lignes(total_poles: int, score: float, note) -> tuple:
+    """Tri du rapport : meilleure note LLM d'abord, puis nb de tags, puis score.
+    Les annonces sans note (jamais analysées) sont placées en dernier."""
+    note_valeur = note if note is not None else -1
+    return (note_valeur, total_poles, score)
+
+
+def filtrer_trier_lignes(lignes: list[dict]) -> list[dict]:
+    """Applique le même filtre sur des lignes plates issues de Supabase
+    (dict avec les clés 'total_poles', 'score_similarite', 'analyse_note'),
+    puis trie par note LLM décroissante, nb de tags, score de proximité."""
+    retenues = [
+        ligne
+        for ligne in lignes
+        if _est_retenue(ligne.get("total_poles") or 0, ligne.get("score_similarite") or 0)
+    ]
+    return sorted(
+        retenues,
+        key=lambda ligne: _cle_tri_lignes(
+            ligne.get("total_poles") or 0,
+            ligne.get("score_similarite") or 0,
+            ligne.get("analyse_note"),
+        ),
+        reverse=True,
+    )

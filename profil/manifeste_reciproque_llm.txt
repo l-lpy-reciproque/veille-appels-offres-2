@@ -1,0 +1,26 @@
+PROFIL DE L'AGENCE RECIPROQUE
+
+IDENTITÉ
+Reciproque est une agence française d'ingénierie culturelle fondée en 2006. Elle se spécialise dans la gestion de projets numériques de médiation dans le secteur culturel : pour les musées, monuments et institutions culturelles, elle conçoit, pilote et met en œuvre des dispositifs numériques de médiation, du concept initial jusqu'à la réalisation et la mise en service, puis pilote et optimise l'exploitation de ces services, existants ou en transition.
+
+CLIENTS ET CONTEXTES TYPIQUES
+Musées, monuments historiques et châteaux, bibliothèques et services d'archives, établissements publics culturels, collectivités et universités portant des projets culturels, patrimoniaux ou de médiation.
+
+CŒUR DE MÉTIER (adéquation maximale)
+- Gestion de projets numériques de médiation culturelle : assistance à maîtrise d'ouvrage, planning prévisionnel, compte-rendu, relevé de décisions, coordination de prestataires, pilotage par les risques, cycle de développement agile, cadrage en méthode Scrum, animation de comités de projet.
+- Médiation culturelle : outils de médiation, évaluation participative.
+- Conception multimédia : benchmark, atelier d'idéation, esquisse, storyboard, maquette papier et logicielle, preuve de concept, prototype.
+- Muséographie : inventaire, conservation préventive, recherche, synopsis, scénario, études de programmation muséographique, rédaction de textes.
+- Scénographie et expographie : conception d'exposition, y compris immersive ; design d'objets et de mobilier ; ingénierie scénique ; synoptique multimédia ; éclairage muséographique ; régie des œuvres audiovisuelles.
+
+EXPERTISES MOBILISÉES DANS CES PROJETS (adéquation forte lorsque le contexte est culturel, patrimonial ou numérique)
+- Production audiovisuelle : recherche documentaire et iconographique, gestion de contenus patrimoniaux et des droits de propriété intellectuelle, numérisation, restauration numérique, modélisation, synopsis, animatique, dépouillement, écriture, montage, trucage, sous-titrage, post-production.
+- Conseil stratégique : audit, diagnostic, enquête de publics, analyse de productivité, définition des besoins, indicateurs clés de succès, stratégie numérique, schéma directeur, note de cadrage, design de services, direction artistique, recherche de partenariat.
+- Réalisation : direction artistique, habillage graphique, design thinking, direction technique, génie logiciel, développement logiciel, intégration, traduction, recette, tests unitaires, tests panel, suivi de version.
+- Exploitation : surveillance, archivage, catalogage, optimisation de la recherchabilité, contribution éditoriale, publication et réutilisation de données publiques, signalétique dynamique, support technique, hébergement, maintenance préventive et curative.
+
+CRITÈRES D'APPRÉCIATION D'UNE ANNONCE
+- Une annonce est le plus pertinente lorsqu'elle porte sur le pilotage, la conception ou la réalisation d'un projet avec un aspect numérique dans un contexte culturel, patrimonial, muséal ou audiovisuel, c'est-à-dire sur une prestation intellectuelle, de conception, de création ou d'accompagnement.
+- Les intitulés génériques (assistance à maîtrise d'ouvrage, maîtrise d'œuvre, audit, études, prestations de services, maintenance, communication) sont pertinents si le domaine concerné relève de l'activité de Reciproque. Appliqués à la voirie, au bâtiment, à l'eau, aux déchets, au logement, à l'assurance ou à la santé, ils sont hors sujet.
+- Les marchés numériques sans dimension culturelle (site internet, application, dématérialisation, progiciel) présentent une adéquation partielle : elle est plus forte quand il s'agit de conception, de développement ou d'intégration, plus faible quand il s'agit de fourniture, d'infogérance ou de maintenance de matériel.
+- Sont hors périmètre : les travaux de construction ou d'aménagement sans conception, les assurances, la restauration ou la conservation matérielle d'œuvres et de bâtiments.
