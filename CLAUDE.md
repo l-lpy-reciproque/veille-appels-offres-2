@@ -64,7 +64,7 @@ Keywords in `mots_cles.py` must be lowercase and accent-free, because matching i
 Access is enforced in Supabase, not in the page. The full schema, policies, grants and trigger are in `sql/schema_supabase.sql`. It is re-runnable, but it is applied by hand in the Supabase SQL editor: keep it in sync with any schema change. It sets up:
 - RLS is on, with policies `lecture` (SELECT) and `maj` (UPDATE) for `authenticated` only. `anon` has no grants.
 - `authenticated` has column-level UPDATE on `vue` and `note_humaine` only.
-- Constraint: `note_humaine` is NULL or between 0 and 5.
+- Constraint `note_humaine_1_3`: `note_humaine` is NULL or between 1 and 3 (1 non pertinent, 2 partiellement pertinent, 3 pertinent; the page shows these labels, not numbers). It was 0–5 until 15/10/2026; existing 0 and 1 were mapped to 1.
 - Trigger `tracer_annotation` (BEFORE UPDATE) fills `annotation_par` (JWT email) and `annotation_le` only when `vue` or `note_humaine` changes, so pipeline upserts don't touch them.
 - Public sign-ups are disabled; accounts are created in the Supabase dashboard.
 

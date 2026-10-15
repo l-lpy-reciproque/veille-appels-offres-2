@@ -37,11 +37,18 @@ CREATE TABLE IF NOT EXISTS annonces_boamp (
     analyse_note                smallint,
     -- Colonnes de l'équipe, écrites uniquement depuis la page web.
     vue                         boolean NOT NULL DEFAULT false,
-    note_humaine                smallint CHECK (note_humaine BETWEEN 0 AND 5),
+    -- 1 = non pertinent, 2 = partiellement pertinent, 3 = pertinent.
+    note_humaine                smallint,
     annotation_par              text,
     annotation_le               timestamptz,
     PRIMARY KEY (id)
 );
+
+ALTER TABLE annonces_boamp DROP CONSTRAINT IF EXISTS annonces_boamp_note_humaine_check;
+ALTER TABLE annonces_boamp DROP CONSTRAINT IF EXISTS note_humaine_0_5;
+ALTER TABLE annonces_boamp DROP CONSTRAINT IF EXISTS note_humaine_1_3;
+ALTER TABLE annonces_boamp ADD CONSTRAINT note_humaine_1_3
+    CHECK (note_humaine IS NULL OR note_humaine BETWEEN 1 AND 3);
 
 -- 2. Accès depuis la page web -----------------------------------------------
 --    Lecture réservée aux utilisateurs connectés ; seules vue et note_humaine
