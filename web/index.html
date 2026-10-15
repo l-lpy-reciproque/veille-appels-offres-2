@@ -8,8 +8,9 @@
   Page de suivi des annonces BOAMP retenues par la pipeline.
 
   Lit directement la table annonces_boamp dans Supabase (aucune régénération
-  quotidienne) : annonces marquées `rapporte`, plus celles déjà notées par
-  l'équipe, même si elles ne passent plus le filtre.
+  quotidienne) : annonces marquées `rapporte` dont la note LLM est absente ou
+  strictement positive, plus celles déjà notées par l'équipe, même si elles ne
+  passent plus le filtre.
   Seules les colonnes `vue` et `note_humaine` sont modifiables depuis la page
   (droits par colonne + RLS côté Supabase, rôle authenticated uniquement).
 
@@ -365,8 +366,9 @@ async function charger() {
     const { data, error } = await client
       .from("annonces_boamp")
       .select(COLONNES)
-      // Annonces retenues par la pipeline, plus celles déjà notées par l'équipe.
-      .or("rapporte.eq.true,note_humaine.not.is.null")
+      // Annonces retenues par la pipeline (sauf note LLM à 0), plus celles déjà
+      // notées par l'équipe.
+      .or("and(rapporte.eq.true,or(analyse_note.is.null,analyse_note.gt.0)),note_humaine.not.is.null")
       .order("idweb")
       .range(debut, debut + TAILLE_PAGE - 1);
     if (error) throw error;
