@@ -12,22 +12,15 @@ CŒUR DE MÉTIER (adéquation maximale)
 - Assistance à maîtrise d'ouvrage et gestion de projets numériques de médiation culturelle : planning prévisionnel, compte-rendu, relevé de décisions, coordination de prestataires, pilotage par les risques, cycle de développement agile, cadrage en méthode Scrum, animation de comités de projet.
 - Conseil et accompagnement : transition numérique, stratégie numérique de communication et de médiation.
 - Muséographie et programmation : savoir-faire de programmiste, études de programmation muséographique, inventaire, conservation préventive, recherche, synopsis, scénario, rédaction de textes. Le terme « programmation » s'entend ici au sens du programmiste : définition des besoins et rédaction du programme d'un projet de musée, de lieu de visite ou d'exposition.
-- Médiation culturelle : outils de médiation, évaluation participative.
 - Conception multimédia : benchmark, atelier d'idéation, esquisse, storyboard, maquette papier et logicielle, preuve de concept, prototype.
-- Scénographie et expographie : conception d'exposition, y compris immersive ; design d'objets et de mobilier ; ingénierie scénique ; synoptique multimédia ; éclairage muséographique ; régie des œuvres audiovisuelles.
+- Scénographie et expographie : conception d'exposition, y compris immersive ; ingénierie scénique ; synoptique multimédia ; régie des œuvres audiovisuelles.
 
 EXPERTISES MOBILISÉES DANS CES PROJETS (adéquation forte lorsque le contexte est culturel, patrimonial, de marque ou numérique)
-- Production audiovisuelle : recherche documentaire et iconographique, gestion de contenus patrimoniaux et des droits de propriété intellectuelle, numérisation, restauration numérique, modélisation, synopsis, animatique, dépouillement, écriture, montage, trucage, sous-titrage, post-production.
 - Conseil stratégique : audit, diagnostic, enquête de publics, analyse de productivité, définition des besoins, indicateurs clés de succès, stratégie numérique, schéma directeur, note de cadrage, design de services, direction artistique, recherche de partenariat.
 - Réalisation : direction artistique, habillage graphique, design thinking, direction technique, génie logiciel, développement logiciel, intégration, traduction, recette, tests unitaires, tests panel, suivi de version.
 - Exploitation : surveillance, archivage, catalogage, optimisation de la recherchabilité, contribution éditoriale, publication et réutilisation de données publiques, signalétique dynamique, support technique, hébergement, maintenance préventive et curative.
 
 CRITÈRES D'APPRÉCIATION D'UNE ANNONCE
-- Note 5 : l'annonce porte sur un élément du cœur de métier (dispositif numérique de médiation, expérience visiteur, assistance à maîtrise d'ouvrage, stratégie numérique de communication et de médiation, muséographie, programmation, exposition) pour un patrimoine ou un lieu de visite, quel qu'il soit.
-- Note 4 : l'annonce mobilise une ou plusieurs expertises listées ci-dessus (audiovisuel, conseil, réalisation, exploitation) dans un contexte culturel, patrimonial ou de marque, ou porte sur le cœur de métier sans que le numérique soit central.
-- Note 3 : marché numérique sans dimension culturelle ou patrimoniale (site internet, application, dématérialisation, progiciel) portant sur de la conception, du développement ou de l'intégration.
-- Note 2 : marché numérique sans dimension culturelle portant sur de la fourniture, de l'infogérance ou de la maintenance de matériel.
-- Note 0 ou 1 : hors périmètre.
+- L'annonce est pertinente si elle porte sur un élément du cœur de métier (dispositif numérique de médiation, expérience visiteur, assistance à maîtrise d'ouvrage, stratégie numérique de communication et de médiation, muséographie, programmation, exposition) pour un patrimoine ou un lieu de visite, quel qu'il soit.
 - Les intitulés génériques (assistance à maîtrise d'ouvrage, maîtrise d'œuvre, audit, études, programmation, prestations de services, maintenance, communication) sont pertinents si le domaine concerné relève de l'activité de Reciproque. Appliqués à la voirie, au bâtiment sans projet culturel, à l'eau, aux déchets, au logement, à l'assurance ou à la santé, ils sont hors sujet.
 - Sont hors périmètre : les travaux de construction ou d'aménagement sans conception, les assurances, la restauration ou la conservation matérielle d'œuvres et de bâtiments.
-- Pour un marché en plusieurs lots, la note reflète le lot le plus pertinent pour Reciproque.

@@ -39,7 +39,7 @@ justifier la note en s'appuyant sur un élément concret de l'annonce.
 
 PROFIL D'ACTIVITÉ DE RECIPROQUE :
 {manifeste}
-L'agence Reciproque travaille principalement en région parisienne ou dans des territoires facilement accessibles en transport.
+L'agence Reciproque travaille principalement en région parisienne ou dans des territoires facilement accessibles en transport. Si ce critère n'est pas respecté, la note peut légèrement baisser.
 """
 
 
