@@ -35,7 +35,7 @@ CI:
 
 **Incremental cursor.** `main.py` uses `MAX(dateparution)` from `annonces_boamp` as `depuis` (falls back to today − 7 days on an empty table). Ingestion fetches `dateparution >= depuis`, so the last day is always re-fetched; that is safe because writes are `INSERT … ON CONFLICT (idweb) DO UPDATE` over `db.TOUTES_COLONNES`, which excludes the team's columns. Never add `vue`, `note_humaine` or `annotation_*` to the upsert, or every run would wipe the team's work.
 
-**Selection rule.** `restitution._est_retenue` holds the score threshold (the required score decreases as `total_poles` increases: ≥3 → >0.2, 2 → >0.3, 1 → >0.4, 0 → >0.5). It is applied:
+**Selection rule.** `restitution._est_retenue` holds the score threshold (the required score decreases as `total_poles` increases: ≥3 → >0.25, 2 → >0.35, 1 → >0.45, 0 → >0.55, via the `SEUIL_SCORE_*` constants). It is applied:
 - on `(annonce, score)` tuples for the current run (`est_retenue`, `restituer`). This sets `rapporte` before the upsert and decides what goes to the LLM;
 - on flat DB rows (`filtrer_trier_lignes`, sorted by LLM note, total_poles, score, with unrated rows last). This is used by `recalculer_rapporte.py`, and by `recalculer_scores.py llm`, which rates the most promising rows first in case the Groq quota runs out.
 
@@ -70,4 +70,4 @@ Access is enforced in Supabase, not in the page. The full schema, policies, gran
 
 Any new column the page must write needs its own column grant. The pipeline connects as the database owner through `SUPABASE_DB_URL`, so these rules don't apply to it.
 
-Page conventions: build DOM with `textContent` (tender text comes from BOAMP and is untrusted) and only link `http(s)` URLs. "Today" means `dateparution` equal to the local date, not `date_ingestion`, which is refreshed on every re-fetch.
+Page conventions: build DOM with `textContent` (tender text comes from BOAMP and is untrusted) and only link `http(s)` URLs. The "Dernière ingestion" line uses `MAX(dateparution)` (the pipeline cursor), not `date_ingestion`, which is refreshed on every re-fetch.

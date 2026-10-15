@@ -346,26 +346,31 @@ function afficher() {
 
 // --- Données ----------------------------------------------------------------
 
-// Date du jour (heure locale) au format de dateparution : AAAA-MM-JJ.
-function aujourdhui() {
-  const d = new Date();
-  return [d.getFullYear(), d.getMonth() + 1, d.getDate()]
-    .map((n) => String(n).padStart(2, "0")).join("-");
-}
-
-// Annonces publiées aujourd'hui : toutes celles collectées en base (comptage
-// côté Supabase, sans les télécharger) et, parmi elles, celles retenues.
+// Dernière ingestion : date de parution la plus récente en base (même curseur
+// que main.py). Compte toutes les annonces collectées ce jour-là (comptage côté
+// Supabase, sans les télécharger) et, parmi elles, celles affichées.
 async function afficherNouveautes() {
-  const jour = aujourdhui();
-  const { count, error } = await client
+  const { data, error } = await client
+    .from("annonces_boamp")
+    .select("dateparution")
+    .not("dateparution", "is", null)
+    .order("dateparution", { ascending: false })
+    .limit(1);
+  const jour = data?.[0]?.dateparution;
+  if (error || !jour) {
+    $("nouveautes").textContent = "";
+    return;
+  }
+  const { count, error: erreurComptage } = await client
     .from("annonces_boamp")
     .select("idweb", { count: "exact", head: true })
     .eq("dateparution", jour);
   const retenues = annonces.filter((a) => a.dateparution === jour).length;
   const enGras = el("strong", { textContent: `${retenues} retenues` });
-  $("nouveautes").replaceChildren(...(error
-    ? ["Aujourd'hui : ", enGras]
-    : [`Aujourd'hui (${formaterDate(jour)}) : ${count} nouvelles annonces collectées, dont `, enGras]));
+  const debut = `Dernière ingestion (${formaterDate(jour)}) : `;
+  $("nouveautes").replaceChildren(...(erreurComptage
+    ? [debut, enGras]
+    : [`${debut}${count} annonces collectées, dont `, enGras]));
 }
 
 async function charger() {
