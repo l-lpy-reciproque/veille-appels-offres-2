@@ -39,7 +39,7 @@ CI:
 - on `(annonce, score)` tuples for the current run (`est_retenue`, `restituer`). This sets `rapporte` before the upsert and decides what goes to the LLM;
 - on flat DB rows (`filtrer_trier_lignes`, sorted by LLM note, total_poles, score, with unrated rows last). This is used by `recalculer_rapporte.py`, and by `recalculer_scores.py llm`, which rates the most promising rows first in case the Groq quota runs out.
 
-The page does **not** reimplement the threshold: it shows `rapporte = true OR note_humaine IS NOT NULL`. Its sort is deliberately different: `dateparution` descending first (newest day on top), then the same LLM note / total_poles / score order.
+The page does **not** reimplement the threshold: it shows `(rapporte = true AND (analyse_note IS NULL OR analyse_note > 0)) OR note_humaine IS NOT NULL`, i.e. tenders the LLM rated 0 are hidden. Its sort is deliberately different: `dateparution` descending first (newest day on top), then the same LLM note / total_poles / score order.
 
 **Stored values are frozen.** The pipeline never re-tags or re-scores existing rows. After a manifesto change, run `recalculer_scores.py similarite`. After threshold or score changes, run `recalculer_rapporte.py` (it only recomputes `rapporte` from stored values), then `recalculer_scores.py llm` to rate newly retained rows. Nothing re-tags existing rows after a keyword/cluster change. `recalculer_scores.py` does not touch `rapporte`.
 
