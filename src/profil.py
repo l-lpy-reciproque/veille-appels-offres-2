@@ -11,8 +11,8 @@ Deux fichiers distincts, car ils servent deux usages différents :
 from pathlib import Path
 
 DOSSIER_PROFIL = Path(__file__).parent.parent / "profil"
-CHEMIN_MANIFESTE = DOSSIER_PROFIL / "manifeste_reciproque_2.txt"
-CHEMIN_MANIFESTE_LLM = DOSSIER_PROFIL / "manifeste_reciproque_llm.txt"
+CHEMIN_MANIFESTE = DOSSIER_PROFIL / "manifeste_reciproque_4.txt"
+CHEMIN_MANIFESTE_LLM = DOSSIER_PROFIL / "manifeste_reciproque_llm_2.txt"
 
 
 def charger_manifeste() -> str:
