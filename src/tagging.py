@@ -1,6 +1,9 @@
 """Calcul des tags thématiques par annonce, à partir des listes de mots-clés.
 
-Cherche dans la réunion de trois champs : objet, nomacheteur, descripteur_libelle.
+BOAMP : cherche dans la réunion de trois champs : objet, nomacheteur, descripteur_libelle.
+TED : titre_fr (« Pays – libellé CPV – titre d'origine »), objet, nomacheteur,
+leurs traductions automatiques (objet_fr, nomacheteur_fr : avis non francophones
+proches du manifeste seulement, voir traduction.py) et libelles_cpv.
 """
 
 from mots_cles import (
@@ -23,16 +26,19 @@ CLUSTERS = {
 }
 
 CHAMPS_RECHERCHES = ("objet", "nomacheteur", "descripteur_libelle")
+CHAMPS_RECHERCHES_TED = (
+    "titre_fr", "objet", "objet_fr", "nomacheteur", "nomacheteur_fr", "libelles_cpv",
+)
 
 
 def _contient_un_mot(texte: str, mots_cles: list[str]) -> bool:
     return any(mot in texte for mot in mots_cles)
 
 
-def tagger_annonce(annonce: dict) -> dict:
+def tagger_annonce(annonce: dict, champs: tuple[str, ...] = CHAMPS_RECHERCHES) -> dict:
     """Calcule les tags binaires par cluster + le total, pour une annonce."""
     texte_reuni = " ".join(
-        normaliser(aplatir(annonce.get(champ))) for champ in CHAMPS_RECHERCHES
+        normaliser(aplatir(annonce.get(champ))) for champ in champs
     )
 
     tags = {
@@ -43,8 +49,8 @@ def tagger_annonce(annonce: dict) -> dict:
     return tags
 
 
-def tagger_annonces(annonces: list[dict]) -> list[dict]:
+def tagger_annonces(annonces: list[dict], champs: tuple[str, ...] = CHAMPS_RECHERCHES) -> list[dict]:
     """Ajoute les champs de tags directement dans chaque dict annonce, en place."""
     for annonce in annonces:
-        annonce.update(tagger_annonce(annonce))
+        annonce.update(tagger_annonce(annonce, champs))
     return annonces

@@ -17,6 +17,7 @@ from profil import charger_manifeste_llm
 NOM_MODELE = "openai/gpt-oss-120b"
 TEMPERATURE = 0.2
 LONGUEUR_MAX_OBJET = 1500  # garde-fou sur la taille du prompt
+LONGUEUR_MAX_DESCRIPTION = 1500
 
 SYSTEM_PROMPT = """Tu es un assistant qui aide l'agence Reciproque à trier les
 appels d'offres publics. Tu analyses chaque annonce et rends un avis bref et
@@ -54,7 +55,25 @@ def _prompt_annonce(annonce: dict) -> str:
     )
 
 
-def _analyser_une(client: Groq, annonce: dict, system: str) -> dict | None:
+def _prompt_annonce_ted(annonce: dict) -> str:
+    objet = (annonce.get("objet") or "")[:LONGUEUR_MAX_OBJET]
+    description = (annonce.get("description") or "")[:LONGUEUR_MAX_DESCRIPTION]
+    return (
+        "Avis européen (TED), possiblement rédigé dans une autre langue que le français.\n"
+        f"Objet : {objet}\n"
+        f"Objet (traduction automatique) : {annonce.get('objet_fr') or ''}\n"
+        f"Description : {description}\n"
+        f"Acheteur : {annonce.get('nomacheteur') or ''}\n"
+        f"Pays : {annonce.get('pays') or ''}\n"
+        f"Ville : {annonce.get('ville') or ''}\n"
+        f"Codes CPV : {annonce.get('libelles_cpv') or ''}\n"
+    )
+
+
+PROMPTS = {"boamp": _prompt_annonce, "ted": _prompt_annonce_ted}
+
+
+def _analyser_une(client: Groq, annonce: dict, system: str, prompt=_prompt_annonce) -> dict | None:
     """Retourne {'analyse_pertinence': str, 'analyse_note': int} ou None en cas d'échec."""
     try:
         reponse = client.chat.completions.create(
@@ -63,7 +82,7 @@ def _analyser_une(client: Groq, annonce: dict, system: str) -> dict | None:
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": system},
-                {"role": "user", "content": _prompt_annonce(annonce)},
+                {"role": "user", "content": prompt(annonce)},
             ],
         )
         donnees = json.loads(reponse.choices[0].message.content)
@@ -79,8 +98,8 @@ def _analyser_une(client: Groq, annonce: dict, system: str) -> dict | None:
         return None
 
 
-def analyser_annonces(annonces: list[dict]) -> dict[str, dict]:
-    """Analyse une liste d'annonces.
+def analyser_annonces(annonces: list[dict], source: str = "boamp") -> dict[str, dict]:
+    """Analyse une liste d'annonces. source : "boamp" ou "ted" (format du prompt).
 
     Retourne {idweb: {'analyse_pertinence': str, 'analyse_note': int}}.
     Les annonces dont l'analyse échoue sont simplement absentes du résultat.
@@ -100,7 +119,7 @@ def analyser_annonces(annonces: list[dict]) -> dict[str, dict]:
         if not idweb:
             continue
         print(f"  analyse {i}/{len(annonces)} : {idweb}")
-        analyse = _analyser_une(client, annonce, system)
+        analyse = _analyser_une(client, annonce, system, PROMPTS[source])
         if analyse:
             resultats[idweb] = analyse
     return resultats

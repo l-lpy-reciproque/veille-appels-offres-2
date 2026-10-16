@@ -1,5 +1,6 @@
 requests
 sentence-transformers
+sentencepiece  # tokenizer du modèle de traduction (traduction.py)
 psycopg2-binary
 python-dotenv
 groq

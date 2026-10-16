@@ -1,4 +1,4 @@
-name: Pipeline veille BOAMP
+name: Pipeline veille BOAMP + TED
 
 on:
   workflow_dispatch:
@@ -20,11 +20,13 @@ jobs:
       - name: Installer les dépendances
         run: pip install -r requirements.txt
 
-      - name: Mettre en cache le modèle Hugging Face
+      # Modèles d'embeddings et de traduction (TED). Changer la clé après un
+      # changement de modèle : un cache trouvé n'est jamais réenregistré.
+      - name: Mettre en cache les modèles Hugging Face
         uses: actions/cache@v4
         with:
           path: ~/.cache/huggingface
-          key: modele-sentence-transformers-v1
+          key: modeles-hf-embeddings-m2m100-v2
 
       - name: Lancer la pipeline (collecte + tags + scores + analyse LLM)
         env:

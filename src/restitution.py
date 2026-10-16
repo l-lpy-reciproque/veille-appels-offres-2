@@ -7,15 +7,28 @@ Supabase, pour les scripts de recalcul (filtrer_trier_lignes).
 Règle de sélection : le seuil de score exigé décroît avec le nombre de pôles
 matchés. Une annonce sans aucun pôle doit donc être très pertinente pour être
 retenue, tandis qu'une annonce multi-pôles est retenue plus facilement.
+
+Avis TED non francophones (langue renseignée et différente de "fra") : ils
+doivent d'abord dépasser SEUIL_SCORE_TRADUCTION, seuil qui décide aussi de leur
+traduction (main.py) ; sans traduction, leurs tags ne sont pas comparables.
+Les annonces BOAMP n'ont pas de langue : la règle ne les concerne pas.
 """
 
 SEUIL_SCORE_TRES_HAUT = 0.55
 SEUIL_SCORE_HAUT = 0.45
 SEUIL_SCORE_MOYEN = 0.35
 SEUIL_SCORE_BAS = 0.25
+SEUIL_SCORE_TRADUCTION = 0.35
 
 
-def _est_retenue(total_poles: int, score: float) -> bool:
+def est_non_francophone(annonce: dict) -> bool:
+    langue = annonce.get("langue")
+    return bool(langue) and langue != "fra"
+
+
+def _est_retenue(total_poles: int, score: float, non_francophone: bool = False) -> bool:
+    if non_francophone and score <= SEUIL_SCORE_TRADUCTION:
+        return False
     if total_poles >= 3:
         return score > SEUIL_SCORE_BAS
     if total_poles == 2:
@@ -33,7 +46,7 @@ def _cle_tri(total_poles: int, score: float) -> tuple[int, float]:
 def est_retenue(annonce_score: tuple[dict, float]) -> bool:
     """Pour les tuples (annonce, score) issus du run courant."""
     annonce, score = annonce_score
-    return _est_retenue(annonce.get("total_poles", 0), score)
+    return _est_retenue(annonce.get("total_poles", 0), score, est_non_francophone(annonce))
 
 
 def trier_annonces(resultats: list[tuple[dict, float]]) -> list[tuple[dict, float]]:
@@ -63,7 +76,11 @@ def filtrer_trier_lignes(lignes: list[dict]) -> list[dict]:
     retenues = [
         ligne
         for ligne in lignes
-        if _est_retenue(ligne.get("total_poles") or 0, ligne.get("score_similarite") or 0)
+        if _est_retenue(
+            ligne.get("total_poles") or 0,
+            ligne.get("score_similarite") or 0,
+            est_non_francophone(ligne),
+        )
     ]
     return sorted(
         retenues,

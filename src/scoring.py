@@ -15,6 +15,8 @@ def scorer_annonces(
 ) -> list[tuple[dict, float]]:
     """Calcule la similarité cosinus entre le manifeste et chaque annonce (champ 'objet'),
     et retourne les annonces triées par score décroissant."""
+    if not annonces:
+        return []
     embedding_profil = modele.encode(manifeste, convert_to_tensor=True)
     embeddings_annonces = modele.encode(
         [a["objet"] for a in annonces], convert_to_tensor=True

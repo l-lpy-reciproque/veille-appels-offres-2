@@ -1,0 +1,133 @@
+code,libelle
+30191200,Rétroprojecteurs
+30211300,Plates-formes informatiques
+30211400,Configurations informatiques
+48000000,Logiciels et systèmes d'information
+48160000,Logiciels de bibliothèque
+48161000,Système de gestion de bibliothèque
+65000000,Services publics
+71241000,"Études de faisabilité, service de conseil, analyse"
+71242000,"Préparation du projet et de la conception, estimation des coûts"
+71243000,Projets de plans (systémes et intégration)
+71248000,Supervision du projet et documentation
+71300000,Services d'ingénierie
+71320000,Services de conception technique
+71330000,Services divers d'ingénierie
+71335000,Études techniques
+71336000,Services d'assistance dans le domaine de l'ingénierie
+71356000,Services techniques
+71356200,Services d'assistance technique
+71356300,Services d'appui technique
+71356400,Services de planification technique
+71600000,"Services d'essais techniques, services d'analyses et services de conseil"
+72000000,"Services de technologies de l'information, conseil, développement de logiciels, internet et appui"
+72130000,Services de conseil en aménagement de site informatique
+72150000,Services de conseil en audit informatique et services de conseil en matériel informatique
+72200000,Services de programmation et de conseil en logiciels
+72210000,Services de programmation de progiciels
+72211000,Services de programmation de systèmes et de logiciels utilitaires
+72212000,Services de programmation de logiciels d'application
+72212160,Services de développement de logiciels de bibliothèques
+72220000,Services de conseil en systèmes informatiques et conseils techniques
+72222000,Services d'analyse stratégique et de planification de systèmes ou de technologies de l'information
+72222100,Services d'analyse stratégique de systèmes ou de technologies de l'information
+72222200,Services de planification de systèmes ou de technologies de l'information
+72222300,Services de technologies de l'information
+72224000,Services de conseil en gestion de projet
+72224100,Services de planification de la mise en application de systèmes
+72240000,Services d'analyses et de programmation de systèmes
+72243000,Services de programmation
+72244000,Services de prototypage
+72260000,Services relatifs aux logiciels
+72266000,Services de conseil en logiciels
+72300000,Services de commutation de données
+72310000,Services de traitement de données
+72311000,Services informatiques de tabulation
+72311100,Services de conversion de données
+72311200,Services de traitement par lots
+72312100,Services de préparation de données
+72314000,Services de collecte et de collation de données
+72315000,Services de gestion et d'assistance relatifs aux réseaux de données
+72315100,Services d'assistance relative aux réseaux informatiques
+72315200,Services de gestion de réseaux informatiques
+72316000,Services d'analyse de données
+72318000,Services de transmission de données
+72320000,Services de bases de données
+72321000,Services de bases de données à valeur ajoutée
+72322000,Services de gestion de données
+72330000,Services de normalisation et de classification des contenus et des données
+72400000,Services internet
+72413000,Services de conception de sites WWW (World Wide Web)
+72421000,Services de développement des applications client internet ou intranet
+72422000,Services de développement des applications serveur internet ou intranet
+72510000,Services de gestion relatifs à l'informatique
+72514200,Services de gestion d'installations pour le développement de systèmes informatiques
+72600000,Services d'assistance et de conseils informatiques
+72800000,Services d'audit informatique et services d'essai informatique
+72810000,Services d'audit informatique
+73000000,Services de recherche et développement et services de conseil connexes
+73100000,Services de recherche et développement expérimental
+73110000,Services de recherche
+73200000,Services de conseil en recherche et développement
+73210000,Services de conseil en recherche
+73220000,Services de conseil en développement
+73300000,Conception et exécution dans le domaine de la recherche et du développement
+73420000,Étude de préfaisabilité et démonstration technique
+73430000,Test et évaluation
+79131000,Services de documentation
+79212000,Services d'audit
+79310000,Services d'études de marchés
+79311000,Services d'études
+79311100,Services de conception d'études
+79311200,Services de réalisation d'enquêtes
+79311300,Services d'analyses d'enquêtes
+79314000,Étude de faisabilité
+79315000,Services de recherche sociale
+79320000,Services de sondages d'opinion
+79330000,Services statistiques
+79340000,Services de publicité et de marketing
+79341100,Services de conseils en publicité
+79342310,Services d'enquête auprès des consommateurs
+79342311,Services d'enquête sur la satisfaction des consommateurs
+79411100,Services de conseil en développement des entreprises
+79415200,Services de conseil en conception
+79419000,Services de conseil et d'évaluation
+79931000,Services de décoration d'intérieur
+79932000,Services d'architecture d'intérieur
+79933000,Services d'assistance à la conception
+79934000,Services de conception de mobilier
+79950000,"Services d'organisation d'expositions, de foires et de congrès"
+79951000,Services d'organisation de séminaires
+79952000,Services d'organisation d'événements
+79952100,Services d'organisation d'événements culturels
+79956000,Services d'organisation de foires et d'expositions
+79957000,Services d'organisation de ventes aux enchères
+79970000,Services d'édition
+79990000,Services divers aux entreprises
+79995000,Services de gestion de bibliothèque
+79995100,Services d'archivage
+79995200,Services de catalogage
+92100000,Services cinématographiques et services vidéo
+92110000,Services de production de films cinématographique et de vidéos et services connexes
+92111000,Services de production cinématographique et vidéo
+92111100,Production de films et de vidéos à usage pédagogique
+92111200,"Production de films et de vidéos publicitaires, de propagande et d'information"
+92111250,Production de films d'information
+92111260,Production de vidéos d'information
+92111300,Production de films et de vidéos de divertissement
+92111310,Production de films de divertissement
+92111320,Production de vidéos de divertissement
+92112000,Services liés à la production de films cinématographiques ou de vidéos
+92140000,Services de projection de vidéos
+92224000,Services de télévision numérique
+92225000,Services de télévision interactive
+92310000,Services de création et d'interprétation d'œuvres artistiques et littéraires
+92312211,Services d'agences de rédaction
+92500000,"Services de bibliothèques, archives, musées et autres services culturels"
+92510000,Services de bibliothèques et archives
+92511000,Services de bibliothèques
+92512000,Services d'archives
+92520000,Services de musées et de préservation des sites historiques et des services connexes
+92521000,Services de musées
+92521100,Services d'exposition dans les musées
+98300000,Services divers
