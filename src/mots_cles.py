@@ -33,11 +33,7 @@ MOTS_CLES_SECTEURS_TRANSVERSES = [
 
 MOTS_CLES_INSTITUTIONS = [
     'arte france', 'beaux arts', 'beaux-arts', 'bnf', 'cap digital',
-    'carre plantagenet', 'centquatre', 'centre national des arts plastiques', "cnap",
-    'centre national du cinema', "cnc", 'centre pompidou', "crt", 'chateau',
-    'chateau de fontainebleau', 'chateau de versailles', 'cinematheque',
-    "cite de l'architecture et du patrimoine", "cite de l'economie",
-    'cite de la ceramique', 'cite de la musique', 'cmn',
+    'carre plantagenet', 'centquatre', 'centre national des arts plastiques', "cnap", 'centre national du cinema', "cnc", 'centre pompidou', "crt", 'chateau', 'chateau de fontainebleau', 'chateau de versailles', 'cinematheque', "cite de l'architecture et du patrimoine", "cite de l'economie", 'cite de la ceramique', 'cite de la musique', 'cmn',
     'comite regional du tourisme', 'fondation le corbusier', 'grand palais',
     'grande bibliotheque', 'inrap', 'institut du monde arabe', "flc", 
     'institut francais', 'institut national audiovisuel',
